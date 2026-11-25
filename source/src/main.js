@@ -414,8 +414,13 @@ const tipEl = document.getElementById('h'), dot = document.getElementById('d');
 UI.keysUp = () => { keys.clear(); stick = null; looks.clear(); speedFrom = null; showStick(false); };
 UI.hooks.pause = () => { if (audio && !audio.paused) { audio.pause(); audio.__held = true; } };
 UI.hooks.resume = () => { if (audio && audio.__held) { audio.__held = false; audio.play().catch(() => {}); } };
-// iPhone Safari has no pointer lock, and newer browsers answer with a promise that may refuse
-function lock() { try { const p = cv.requestPointerLock && cv.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch {} }
+// iPhone Safari has no pointer lock, and newer browsers answer with a promise that may refuse.
+// A finger never takes the lock: Firefox on Android grants it to a tap and lets it go at the next touch, which would
+// bring the start page back over the room at every press; the touch controls look and walk without it.
+let byTouch = false;
+addEventListener('pointerdown', (e) => { byTouch = e.pointerType === 'touch'; }, true);
+addEventListener('touchstart', () => { byTouch = true; }, { capture: true, passive: true });
+function lock() { if (byTouch) return; try { const p = cv.requestPointerLock && cv.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch {} }
 UI.hooks.relock = () => { startAudio(); lock(); };
 cv.addEventListener('click', (e) => {
   startAudio();
